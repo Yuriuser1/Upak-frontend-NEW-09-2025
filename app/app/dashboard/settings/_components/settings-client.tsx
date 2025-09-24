@@ -63,6 +63,27 @@ export function SettingsClient({ user }: SettingsClientProps) {
     signOut({ callbackUrl: '/' });
   };
 
+  const handleChangePassword = () => {
+    toast('Функция смены пароля будет доступна в будущих обновлениях', { 
+      icon: 'ℹ️',
+      duration: 3000 
+    });
+  };
+
+  const handleConfigureNotifications = () => {
+    toast('Настройки уведомлений будут доступны в будущих обновлениях', { 
+      icon: 'ℹ️',
+      duration: 3000 
+    });
+  };
+
+  const handleChangePhoto = () => {
+    toast('Загрузка фотографии будет доступна в будущих обновлениях', { 
+      icon: 'ℹ️',
+      duration: 3000 
+    });
+  };
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-8">
       {/* Header */}
@@ -195,7 +216,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                       Обновите пароль для повышения безопасности
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleChangePassword}>
                     Изменить пароль
                   </Button>
                 </div>
@@ -207,7 +228,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                       Получать уведомления о статусе заказов
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleConfigureNotifications}>
                     <Bell className="w-4 h-4 mr-2" />
                     Настроить
                   </Button>
@@ -269,7 +290,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
                 )}
               </div>
 
-              <Button variant="outline" size="sm" className="w-full">
+              <Button variant="outline" size="sm" className="w-full" onClick={handleChangePhoto}>
                 Изменить фото
               </Button>
             </CardContent>
