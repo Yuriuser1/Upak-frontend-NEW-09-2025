@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,8 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -27,38 +29,127 @@ import { Order } from '@/lib/types';
 import { format, formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { redirect } from 'next/navigation';
 
 interface OrderDetailClientProps {
-  order: Order;
+  orderId: string;
 }
 
-export function OrderDetailClient({ order: initialOrder }: OrderDetailClientProps) {
-  const [order, setOrder] = useState(initialOrder);
+export function OrderDetailClient({ orderId }: OrderDetailClientProps) {
+  const { data: session, status } = useSession() || {};
+  const [order, setOrder] = useState<Order | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const refreshOrderStatus = async () => {
-    setIsRefreshing(true);
+  // Проверяем авторизацию
+  useEffect(() => {
+    if (status === 'loading') return;
+    
+    if (!session?.user) {
+      window.location.href = '/auth/signin';
+      return;
+    }
+  }, [session, status]);
+
+  // Загружаем данные заказа
+  const loadOrder = async (showToast = false) => {
     try {
-      const response = await fetch(`/api/orders/${order.id}`);
-      if (response.ok) {
-        const { order: updatedOrder } = await response.json();
-        setOrder(updatedOrder);
+      const response = await fetch(`/api/orders/${orderId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Заказ не найден');
+          return;
+        }
+        if (response.status === 401) {
+          window.location.href = '/auth/signin';
+          return;
+        }
+        throw new Error('Ошибка при загрузке заказа');
+      }
+      
+      const { order: orderData } = await response.json();
+      setOrder(orderData);
+      setError(null);
+      
+      if (showToast) {
         toast.success('Статус заказа обновлен');
       }
-    } catch (error) {
-      toast.error('Ошибка при обновлении статуса');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка при загрузке заказа';
+      setError(errorMessage);
+      if (showToast) {
+        toast.error(errorMessage);
+      }
     } finally {
-      setIsRefreshing(false);
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (session?.user) {
+      loadOrder();
+    }
+  }, [orderId, session]);
+
+  const refreshOrderStatus = async () => {
+    setIsRefreshing(true);
+    await loadOrder(true);
+    setIsRefreshing(false);
+  };
+
+  // Показываем загрузку пока проверяется сессия
+  if (status === 'loading' || isLoading) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Загружаем данные заказа...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Показываем ошибку
+  if (error) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <CardTitle>Ошибка</CardTitle>
+              <CardDescription>{error}</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Button asChild>
+                <Link href="/dashboard/orders">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Вернуться к заказам
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Если заказ не загружен
+  if (!order) {
+    return null;
+  }
+
   // Автоматическое обновление статуса каждые 30 секунд для незавершенных заказов
   useEffect(() => {
-    if (order.status !== 'completed' && order.status !== 'failed') {
-      const interval = setInterval(refreshOrderStatus, 30000);
+    if (order?.status && order.status !== 'completed' && order.status !== 'failed') {
+      const interval = setInterval(() => refreshOrderStatus(), 30000);
       return () => clearInterval(interval);
     }
-  }, [order.status, order.id]);
+  }, [order?.status, orderId]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

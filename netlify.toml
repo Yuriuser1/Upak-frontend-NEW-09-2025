@@ -1,12 +1,16 @@
 # netlify.toml
 [build]
   publish = "app/.next"
-  command = "cd app && npm install --legacy-peer-deps && node ../build-netlify.js"
+  command = "cd app && npm install --legacy-peer-deps && node ../build-netlify-production.js"
   environment = { NODE_VERSION = "20", SKIP_ENV_VALIDATION = "true", PRISMA_SKIP_POSTINSTALL_GENERATE = "true" }
 
-# Next.js на Netlify с функциями
+# Netlify Next.js plugin для правильной обработки SSR и API маршрутов
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Функции Netlify
 [functions]
-  directory = "app/.next/server/pages/api"
+  directory = "app/.netlify/functions-internal"
 
 # Редирект apex -> www (на стороне Netlify)  
 [[redirects]]
