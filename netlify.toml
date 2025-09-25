@@ -1,38 +1,48 @@
 # netlify.toml
 [build]
-  publish = "static"
-  command = ""
+  publish = "app/.next"
+  command = "cd app && yarn install && yarn build"
 
-# Редирект apex -> www (на стороне Netlify)
+# Настройки для Next.js на Netlify
+[functions]
+  directory = "app/.next/server/pages/api"
+
+# Редирект apex -> www (на стороне Netlify)  
 [[redirects]]
   from = "https://upak.space/*"
   to   = "https://www.upak.space/:splat"
   status = 301
   force  = true
 
-# SPA-фолбэк (если приложение одностраничное)
+# API роуты - редирект на backend (для production)
+[[redirects]]
+  from = "/api/orders"
+  to   = "https://upak.tech:8001/api/orders"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/orders/*"
+  to   = "https://upak.tech:8001/api/orders/:splat" 
+  status = 200
+  force = false
+
+# SPA-фолбэк для клиентской маршрутизации
 [[redirects]]
   from = "/*"
   to   = "/index.html"
   status = 200
 
-# API роуты - редирект на backend
-[[redirects]]
-  from = "/api/*"
-  to   = "http://localhost:8001/api/:splat"
-  status = 200
-  force = false
-
-# Базовые заголовки кэширования статики
-[[headers]]
-  for = "/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
+# Заголовки для статических ресурсов
 [[headers]]
   for = "/_next/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
 
 # Заголовки безопасности
 [[headers]]
