@@ -1,7 +1,7 @@
 # netlify.toml
 [build]
   publish = "app/.next"
-  command = "cd app && yarn install && yarn build"
+  command = "cd app && npm install --legacy-peer-deps && npm run build"
 
 # Настройки для Next.js на Netlify
 [functions]
