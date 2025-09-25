@@ -1,9 +1,10 @@
 # netlify.toml
 [build]
   publish = "app/.next"
-  command = "cd app && npm install --legacy-peer-deps && npm run build"
+  command = "cd app && npm install --legacy-peer-deps && npx prisma generate && npm run build"
+  environment = { NODE_VERSION = "20" }
 
-# Настройки для Next.js на Netlify
+# Настройки для Next.js на Netlify с серверными функциями
 [functions]
   directory = "app/.next/server/pages/api"
 
